@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flashcards :) - Límite Optimizado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="script.js"></script>
+    <link href="styles.css" rel="stylesheet" />
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-900 min-h-screen p-4 md:p-8">
+    <div class="max-w-5xl mx-auto no-print">
+      <header
+        class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4"
+      >
+        <div class="text-center md:text-left">
+          <h1
+            class="text-4xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center md:justify-start gap-3"
+          >
+            <i class="fas fa-layer-group"></i> Flashcards :)
+          </h1>
+          <div class="mt-2 flex items-center gap-2">
+            <i class="fas fa-bookmark text-slate-300 text-xs"></i>
+            <input
+              type="text"
+              id="deckNameInput"
+              oninput="updateDeckName()"
+              placeholder="Título del Tema"
+              class="bg-transparent border-b-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 focus:border-indigo-500 focus:outline-none text-slate-600 dark:text-slate-300 font-semibold transition-all w-72 px-1 py-0.5"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div
+            class="flex bg-white dark:bg-slate-800 rounded-full shadow-md p-1 border border-slate-200 dark:border-slate-700"
+          >
+            <button
+              onclick="exportJSON()"
+              title="Exportar mazo"
+              class="p-2.5 text-slate-500 hover:text-indigo-500 transition-colors"
+            >
+              <i class="fas fa-file-export"></i>
+            </button>
+            <button
+              onclick="document.getElementById('importFile').click()"
+              title="Importar mazo"
+              class="p-2.5 text-slate-500 hover:text-indigo-500 transition-colors"
+            >
+              <i class="fas fa-file-import"></i>
+            </button>
+            <input
+              type="file"
+              id="importFile"
+              class="hidden"
+              accept=".json"
+              onchange="importJSON(event)"
+            />
+          </div>
+          <button
+            onclick="toggleDarkMode()"
+            class="p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-amber-400 transition-all hover:scale-110"
+          >
+            <i id="themeIcon" class="fas fa-moon text-xl"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Formulario de Entrada -->
+      <div
+        class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-7 mb-8 border border-slate-100 dark:border-slate-700 relative overflow-hidden"
+      >
+        <div class="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
+        <input type="hidden" id="editId" value="" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label
+              class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex justify-between"
+            >
+              <span>Pregunta / Concepto</span>
+              <span id="qChar" class="text-[10px] font-normal opacity-50"
+                >0/500</span
+              >
+            </label>
+            <textarea
+              id="questionInput"
+              maxlength="500"
+              oninput="updateCharCount('questionInput', 'qChar', 500)"
+              placeholder="¿Qué quieres preguntar?"
+              class="w-full p-4 border-2 border-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none h-28 transition-all resize-none"
+            ></textarea>
+          </div>
+          <div>
+            <label
+              class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 flex justify-between"
+            >
+              <span>Respuesta / Definición</span>
+              <span id="aChar" class="text-[10px] font-normal opacity-50"
+                >0/500</span
+              >
+            </label>
+            <textarea
+              id="answerInput"
+              maxlength="500"
+              oninput="updateCharCount('answerInput', 'aChar', 500)"
+              placeholder="Respuesta legible (máx. 500 caracteres)"
+              class="w-full p-4 border-2 border-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none h-28 transition-all resize-none"
+            ></textarea>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="addBtn"
+            onclick="addCard()"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2 active:scale-95"
+          >
+            <i class="fas fa-plus-circle"></i> <span>Añadir Tarjeta</span>
+          </button>
+          <button
+            id="cancelEditBtn"
+            onclick="cancelEdit()"
+            class="hidden bg-slate-100 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 text-slate-600 font-bold py-4 px-8 rounded-2xl transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onclick="loadDemo()"
+            class="px-5 py-4 bg-slate-50 dark:bg-slate-700/50 text-slate-400 dark:text-slate-400 rounded-2xl hover:bg-indigo-50 hover:text-indigo-500 transition-all"
+            title="Cargar ejemplos"
+          >
+            <i class="fas fa-magic"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mazo -->
+      <div
+        class="flex flex-col sm:flex-row justify-between items-end mb-6 gap-4"
+      >
+        <div class="flex flex-col">
+          <h2
+            class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3"
+          >
+            <span id="displayDeckName">Mi Mazo de Estudio</span>
+            <span
+              class="bg-indigo-600 text-white text-[11px] px-3 py-1 rounded-full"
+              id="cardCount"
+              >0</span
+            >
+          </h2>
+          <p
+            id="pageEstimate"
+            class="text-sm text-slate-500 dark:text-slate-400 font-medium italic mt-1"
+          ></p>
+        </div>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button
+            onclick="shuffleCards()"
+            class="px-5 py-2.5 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl font-bold transition-all flex items-center gap-2"
+          >
+            <i class="fas fa-random"></i> Mezclar
+          </button>
+          <button
+            onclick="clearAll()"
+            class="px-5 py-2.5 bg-white dark:bg-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-xl font-bold transition-all flex items-center gap-2"
+          >
+            <i class="fas fa-trash-alt"></i> Limpiar
+          </button>
+          <button
+            onclick="window.print()"
+            class="px-8 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 active:scale-95"
+          >
+            <i class="fas fa-print"></i> Imprimir PDF
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="cardsGrid"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12"
+      ></div>
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+      let flashcards =
+        JSON.parse(localStorage.getItem("myFlashcards_v2")) || [];
+      let deckName = localStorage.getItem("myFlashcardDeckName_v2") || "";
+
+      function initTheme() {
+        const isDark = localStorage.getItem("darkMode") === "true";
+        if (isDark) document.documentElement.classList.add("dark");
+        updateThemeIcon(isDark);
+      }
+
+      function toggleDarkMode() {
+        const isDark = document.documentElement.classList.toggle("dark");
+        localStorage.setItem("darkMode", isDark);
+        updateThemeIcon(isDark);
+      }
+
+      function updateThemeIcon(dark) {
+        const icon = document.getElementById("themeIcon");
+        icon.className = dark ? "fas fa-sun text-xl" : "fas fa-moon text-xl";
+      }
+
+      function updateDeckName() {
+        deckName = document.getElementById("deckNameInput").value;
+        document.getElementById("displayDeckName").innerText =
+          deckName || "Mi Mazo de Estudio";
+        localStorage.setItem("myFlashcardDeckName_v2", deckName);
+      }
+
+      function updateCharCount(id, labelId, max) {
+        const text = document.getElementById(id).value;
+        const label = document.getElementById(labelId);
+        label.innerText = `${text.length}/${max}`;
+        if (text.length >= max) {
+          label.classList.add("text-rose-500", "font-bold");
+        } else {
+          label.classList.remove("text-rose-500", "font-bold");
+        }
+      }
+
+      function save() {
+        localStorage.setItem("myFlashcards_v2", JSON.stringify(flashcards));
+        render();
+      }
+
+      function addCard() {
+        const q = document.getElementById("questionInput");
+        const a = document.getElementById("answerInput");
+        const editId = document.getElementById("editId").value;
+
+        if (!q.value.trim() || !a.value.trim()) return;
+
+        if (editId) {
+          const index = flashcards.findIndex((c) => c.id == editId);
+          if (index !== -1) {
+            flashcards[index].question = q.value.trim();
+            flashcards[index].answer = a.value.trim();
+          }
+          cancelEdit();
+        } else {
+          flashcards.push({
+            id: Date.now(),
+            question: q.value.trim(),
+            answer: a.value.trim(),
+          });
+        }
+
+        q.value = "";
+        a.value = "";
+        updateCharCount("questionInput", "qChar", 500);
+        updateCharCount("answerInput", "aChar", 500);
+        save();
+      }
+
+      function editCard(id) {
+        const card = flashcards.find((c) => c.id === id);
+        if (!card) return;
+        document.getElementById("questionInput").value = card.question;
+        document.getElementById("answerInput").value = card.answer;
+        document.getElementById("editId").value = card.id;
+        document.querySelector("#addBtn span").innerText = "Guardar";
+        document
+          .querySelector("#addBtn")
+          .classList.replace("bg-indigo-600", "bg-amber-500");
+        document.getElementById("cancelEditBtn").classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        updateCharCount("questionInput", "qChar", 500);
+        updateCharCount("answerInput", "aChar", 500);
+      }
+
+      function cancelEdit() {
+        document.getElementById("editId").value = "";
+        document.getElementById("questionInput").value = "";
+        document.getElementById("answerInput").value = "";
+        document.querySelector("#addBtn span").innerText = "Añadir Tarjeta";
+        document
+          .querySelector("#addBtn")
+          .classList.replace("bg-amber-500", "bg-indigo-600");
+        document.getElementById("cancelEditBtn").classList.add("hidden");
+      }
+
+      function removeCard(id) {
+        flashcards = flashcards.filter((c) => c.id !== id);
+        save();
+      }
+
+      function shuffleCards() {
+        if (flashcards.length < 2) return;
+        for (let i = flashcards.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [flashcards[i], flashcards[j]] = [flashcards[j], flashcards[i]];
+        }
+        save();
+      }
+
+      function clearAll() {
+        if (confirm("¿Borrar todo el mazo?")) {
+          flashcards = [];
+          save();
+        }
+      }
+
+      function loadDemo() {
+        const demo = [
+          {
+            id: 1,
+            question: "¿Qué es el ATP?",
+            answer:
+              "El trifosfato de adenosina es la principal molécula portadora de energía en los seres vivos.",
+          },
+          {
+            id: 2,
+            question: "Capital de Francia",
+            answer: "París es la capital y la ciudad más poblada de Francia.",
+          },
+        ];
+        flashcards = [...flashcards, ...demo];
+        save();
+      }
+
+      function exportJSON() {
+        const dataStr =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(flashcards));
+        const dl = document.createElement("a");
+        dl.setAttribute("href", dataStr);
+        dl.setAttribute("download", "mazo_estudio.json");
+        dl.click();
+      }
+
+      function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            flashcards = JSON.parse(e.target.result);
+            save();
+          } catch (err) {
+            alert("Error al importar");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function render() {
+        const grid = document.getElementById("cardsGrid");
+        const printArea = document.getElementById("printArea");
+        const countLabel = document.getElementById("cardCount");
+        const pageEstimate = document.getElementById("pageEstimate");
+
+        grid.innerHTML = "";
+        printArea.innerHTML = "";
+        countLabel.innerText = flashcards.length;
+        document.getElementById("deckNameInput").value = deckName;
+
+        const totalSheets = Math.ceil(flashcards.length / 8);
+        pageEstimate.innerText =
+          totalSheets > 0 ? `Total: ${totalSheets} hoja(s) A4` : "";
+
+        if (flashcards.length === 0) {
+          grid.innerHTML = `<div class="col-span-full text-center py-20 text-slate-400">El mazo está vacío.</div>`;
+          return;
+        }
+
+        flashcards.forEach((card, index) => {
+          const div = document.createElement("div");
+          div.className =
+            "bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 card-preview flex flex-col justify-between";
+          div.innerHTML = `
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase">Tarjeta ${index + 1}</span>
+                        <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${card.question}</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${card.answer}</p>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3 pt-3">
+                        <button onclick="editCard(${card.id})" class="text-indigo-500 hover:underline text-xs font-bold">EDITAR</button>
+                        <button onclick="removeCard(${card.id})" class="text-rose-400 hover:underline text-xs font-bold">BORRAR</button>
+                    </div>
+                `;
+          grid.appendChild(div);
+        });
+
+        const cardsPerPage = 8;
+        for (let i = 0; i < flashcards.length; i += cardsPerPage) {
+          const chunk = flashcards.slice(i, i + cardsPerPage);
+
+          const frontPage = document.createElement("div");
+          frontPage.className = "print-page";
+          chunk.forEach((card) => {
+            const c = document.createElement("div");
+            c.className = "card-print";
+            const isShort = card.question.length < 40 ? "short-text-print" : "";
+            c.innerHTML = `<div class="${isShort}">${card.question}</div>`;
+            frontPage.appendChild(c);
+          });
+          fillEmpty(frontPage, chunk.length, cardsPerPage);
+          printArea.appendChild(frontPage);
+
+          const backPage = document.createElement("div");
+          backPage.className = "print-page back-page";
+          chunk.forEach((card) => {
+            const c = document.createElement("div");
+            c.className = "card-print";
+            const isShort = card.answer.length < 40 ? "short-text-print" : "";
+            c.innerHTML = `<div class="${isShort}">${card.answer.replace(/\n/g, "<br>")}</div>`;
+            backPage.appendChild(c);
+          });
+          fillEmpty(backPage, chunk.length, cardsPerPage);
+          printArea.appendChild(backPage);
+        }
+      }
+
+      function fillEmpty(container, currentCount, targetCount) {
+        for (let j = currentCount; j < targetCount; j++) {
+          const empty = document.createElement("div");
+          empty.className = "card-print";
+          container.appendChild(empty);
+        }
+      }
+
+      window.onload = function () {
+        initTheme();
+        render();
+      };
+    </script>
+  </body>
+</html>
