@@ -1,5 +1,3 @@
-Here is the English translation of your text, maintaining the professional yet approachable tone and the original formatting:
-
 🗂️ Flashcards :) — Study Card Generator
 A lightweight, modern, and functional web tool for creating, managing, and printing personalized flashcards. Designed for students looking to optimize their study time with a system ready to print in A4 format.
 
