@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flashcards :) - Límite Optimizado</title>
+    <title>Flashcards Creator :)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -13,8 +13,110 @@
       href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script src="script.js"></script>
-    <link href="styles.css" rel="stylesheet" />
+    <style>
+      /* Configuración de Tailwind */
+      @layer base {
+        html.dark body {
+          background-color: #0f172a;
+          color: #f8fafc;
+        }
+        body {
+          transition:
+            background-color 0.3s ease,
+            color 0.3s ease;
+          font-family: "Quicksand", sans-serif;
+        }
+      }
+
+      /* Área de impresión oculta por defecto */
+      #printArea {
+        display: none;
+      }
+
+      /* Estilos Estrictos de Impresión */
+      @media print {
+        @page {
+          size: A4;
+          margin: 0 !important;
+        }
+
+        /* Reset de estilos para evitar bloqueos de renderizado */
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        body {
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        .no-print {
+          display: none !important;
+        }
+
+        #printArea {
+          display: block !important;
+          width: 210mm;
+          margin: 0;
+          padding: 0;
+          background: white !important;
+        }
+
+        .print-page {
+          display: grid !important;
+          grid-template-columns: 105mm 105mm;
+          grid-template-rows: repeat(4, 74.25mm);
+          width: 210mm;
+          height: 297mm;
+          page-break-after: always;
+          box-sizing: border-box;
+          background: white !important;
+          border: none !important;
+        }
+
+        .card-print {
+          border: 0.1mm dashed #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 10mm;
+          text-align: center;
+          box-sizing: border-box;
+          overflow: hidden;
+          word-wrap: break-word;
+          color: #000000 !important;
+          background: white !important;
+        }
+
+        .card-print div {
+          width: 100%;
+          font-size: 13pt; /* Fuente consistente para todos */
+          line-height: 1.4;
+          color: #000000 !important;
+          font-weight: 500;
+        }
+
+        /* Ajuste de seguridad solo para textos extremadamente largos */
+        .long-text-print {
+          font-size: 10pt !important;
+          line-height: 1.2 !important;
+        }
+
+        .back-page {
+          direction: rtl; /* Para que coincidan al imprimir a doble cara */
+        }
+
+        .back-page .card-print {
+          direction: ltr;
+        }
+      }
+
+      .card-preview {
+        transition: all 0.2s ease;
+      }
+    </style>
   </head>
   <body class="bg-slate-50 dark:bg-slate-900 min-h-screen p-4 md:p-8">
     <div class="max-w-5xl mx-auto no-print">
@@ -73,7 +175,7 @@
         </div>
       </header>
 
-      <!-- Formulario de Entrada -->
+      <!-- Formulario -->
       <div
         class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-7 mb-8 border border-slate-100 dark:border-slate-700 relative overflow-hidden"
       >
@@ -110,7 +212,7 @@
               id="answerInput"
               maxlength="500"
               oninput="updateCharCount('answerInput', 'aChar', 500)"
-              placeholder="Respuesta legible (máx. 500 caracteres)"
+              placeholder="Respuesta legible"
               class="w-full p-4 border-2 border-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none h-28 transition-all resize-none"
             ></textarea>
           </div>
@@ -140,7 +242,7 @@
         </div>
       </div>
 
-      <!-- Mazo -->
+      <!-- Mazo UI -->
       <div
         class="flex flex-col sm:flex-row justify-between items-end mb-6 gap-4"
       >
@@ -188,9 +290,22 @@
       ></div>
     </div>
 
-    <div id="printArea"></div>
+    <!-- Área de impresión separada -->
+    <div id="printArea" aria-hidden="true"></div>
 
     <script>
+      // Configuración de Tailwind
+      window.tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Quicksand", "sans-serif"],
+            },
+          },
+        },
+      };
+
       let flashcards =
         JSON.parse(localStorage.getItem("myFlashcards_v2")) || [];
       let deckName = localStorage.getItem("myFlashcardDeckName_v2") || "";
@@ -209,7 +324,8 @@
 
       function updateThemeIcon(dark) {
         const icon = document.getElementById("themeIcon");
-        icon.className = dark ? "fas fa-sun text-xl" : "fas fa-moon text-xl";
+        if (icon)
+          icon.className = dark ? "fas fa-sun text-xl" : "fas fa-moon text-xl";
       }
 
       function updateDeckName() {
@@ -285,9 +401,10 @@
         document.getElementById("questionInput").value = "";
         document.getElementById("answerInput").value = "";
         document.querySelector("#addBtn span").innerText = "Añadir Tarjeta";
-        document
-          .querySelector("#addBtn")
-          .classList.replace("bg-amber-500", "bg-indigo-600");
+        const btn = document.querySelector("#addBtn");
+        if (btn.classList.contains("bg-amber-500")) {
+          btn.classList.replace("bg-amber-500", "bg-indigo-600");
+        }
         document.getElementById("cancelEditBtn").classList.add("hidden");
       }
 
@@ -349,7 +466,7 @@
             flashcards = JSON.parse(e.target.result);
             save();
           } catch (err) {
-            alert("Error al importar");
+            console.error("Error al importar");
           }
         };
         reader.readAsText(file);
@@ -361,10 +478,13 @@
         const countLabel = document.getElementById("cardCount");
         const pageEstimate = document.getElementById("pageEstimate");
 
+        // Limpiar para renderizar
         grid.innerHTML = "";
         printArea.innerHTML = "";
         countLabel.innerText = flashcards.length;
         document.getElementById("deckNameInput").value = deckName;
+        document.getElementById("displayDeckName").innerText =
+          deckName || "Mi Mazo de Estudio";
 
         const totalSheets = Math.ceil(flashcards.length / 8);
         pageEstimate.innerText =
@@ -375,61 +495,76 @@
           return;
         }
 
+        // --- RENDERIZAR EN PANTALLA ---
         flashcards.forEach((card, index) => {
           const div = document.createElement("div");
           div.className =
             "bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 card-preview flex flex-col justify-between";
           div.innerHTML = `
-                    <div>
-                        <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase">Tarjeta ${index + 1}</span>
-                        <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${card.question}</p>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${card.answer}</p>
-                    </div>
-                    <div class="mt-6 flex justify-end gap-3 pt-3">
-                        <button onclick="editCard(${card.id})" class="text-indigo-500 hover:underline text-xs font-bold">EDITAR</button>
-                        <button onclick="removeCard(${card.id})" class="text-rose-400 hover:underline text-xs font-bold">BORRAR</button>
-                    </div>
-                `;
+            <div>
+              <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase">Tarjeta ${index + 1}</span>
+              <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${card.question}</p>
+              <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${card.answer}</p>
+            </div>
+            <div class="mt-6 flex justify-end gap-3 pt-3">
+              <button onclick="editCard(${card.id})" class="text-indigo-500 hover:underline text-xs font-bold">EDITAR</button>
+              <button onclick="removeCard(${card.id})" class="text-rose-400 hover:underline text-xs font-bold">BORRAR</button>
+            </div>
+          `;
           grid.appendChild(div);
         });
 
+        // --- RENDERIZAR PARA IMPRESIÓN ---
         const cardsPerPage = 8;
         for (let i = 0; i < flashcards.length; i += cardsPerPage) {
           const chunk = flashcards.slice(i, i + cardsPerPage);
 
+          // Página de Frentes
           const frontPage = document.createElement("div");
           frontPage.className = "print-page";
           chunk.forEach((card) => {
-            const c = document.createElement("div");
-            c.className = "card-print";
-            const isShort = card.question.length < 40 ? "short-text-print" : "";
-            c.innerHTML = `<div class="${isShort}">${card.question}</div>`;
-            frontPage.appendChild(c);
+            const cell = document.createElement("div");
+            cell.className = "card-print";
+            const isLong = card.question.length > 180 ? "long-text-print" : "";
+            cell.innerHTML = `<div class="${isLong}">${card.question}</div>`;
+            frontPage.appendChild(cell);
           });
-          fillEmpty(frontPage, chunk.length, cardsPerPage);
+          fillEmptyCells(frontPage, chunk.length, cardsPerPage);
           printArea.appendChild(frontPage);
 
+          // Página de Dorsos
           const backPage = document.createElement("div");
           backPage.className = "print-page back-page";
           chunk.forEach((card) => {
-            const c = document.createElement("div");
-            c.className = "card-print";
-            const isShort = card.answer.length < 40 ? "short-text-print" : "";
-            c.innerHTML = `<div class="${isShort}">${card.answer.replace(/\n/g, "<br>")}</div>`;
-            backPage.appendChild(c);
+            const cell = document.createElement("div");
+            cell.className = "card-print";
+            const isLong = card.answer.length > 250 ? "long-text-print" : "";
+            cell.innerHTML = `<div class="${isLong}">${card.answer.replace(/\n/g, "<br>")}</div>`;
+            backPage.appendChild(cell);
           });
-          fillEmpty(backPage, chunk.length, cardsPerPage);
+          fillEmptyCells(backPage, chunk.length, cardsPerPage);
           printArea.appendChild(backPage);
         }
       }
 
-      function fillEmpty(container, currentCount, targetCount) {
-        for (let j = currentCount; j < targetCount; j++) {
+      function fillEmptyCells(container, current, target) {
+        for (let j = current; j < target; j++) {
           const empty = document.createElement("div");
           empty.className = "card-print";
           container.appendChild(empty);
         }
       }
+
+      // Escuchar eventos de impresión para regenerar el área solo si es necesario
+      window.onbeforeprint = () => {
+        // El render ya se encarga de tenerlo listo, pero forzamos sincronización
+        if (
+          flashcards.length > 0 &&
+          !document.getElementById("printArea").innerHTML
+        ) {
+          render();
+        }
+      };
 
       window.onload = function () {
         initTheme();
