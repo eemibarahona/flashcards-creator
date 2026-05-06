@@ -40,7 +40,6 @@
           margin: 0 !important;
         }
 
-        /* Reset de estilos para evitar bloqueos de renderizado */
         * {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
@@ -92,20 +91,29 @@
 
         .card-print div {
           width: 100%;
-          font-size: 13pt; /* Fuente consistente para todos */
+          font-size: 13pt;
           line-height: 1.4;
           color: #000000 !important;
           font-weight: 500;
         }
 
-        /* Ajuste de seguridad solo para textos extremadamente largos */
+        .card-print img {
+          max-width: 100%;
+          max-height: 50mm;
+          object-fit: contain;
+          margin-top: 5mm;
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
         .long-text-print {
           font-size: 10pt !important;
           line-height: 1.2 !important;
         }
 
         .back-page {
-          direction: rtl; /* Para que coincidan al imprimir a doble cara */
+          direction: rtl;
         }
 
         .back-page .card-print {
@@ -115,6 +123,28 @@
 
       .card-preview {
         transition: all 0.2s ease;
+      }
+
+      .image-preview-container {
+        position: relative;
+        display: inline-block;
+      }
+
+      .remove-img-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        cursor: pointer;
+        border: 2px solid white;
       }
     </style>
   </head>
@@ -208,13 +238,43 @@
                 >0/500</span
               >
             </label>
-            <textarea
-              id="answerInput"
-              maxlength="500"
-              oninput="updateCharCount('answerInput', 'aChar', 500)"
-              placeholder="Respuesta legible"
-              class="w-full p-4 border-2 border-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none h-28 transition-all resize-none"
-            ></textarea>
+            <div class="relative">
+              <textarea
+                id="answerInput"
+                maxlength="500"
+                oninput="updateCharCount('answerInput', 'aChar', 500)"
+                placeholder="Respuesta legible"
+                class="w-full p-4 border-2 border-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-2xl focus:border-indigo-500 focus:ring-0 outline-none h-28 transition-all resize-none"
+              ></textarea>
+              <div class="absolute bottom-3 right-3 flex items-center gap-2">
+                <div id="imagePreviewArea" class="hidden">
+                  <div class="image-preview-container">
+                    <img
+                      id="imageThumbnail"
+                      src=""
+                      class="w-10 h-10 object-cover rounded-lg border border-slate-200"
+                    />
+                    <div onclick="clearImage()" class="remove-img-btn">
+                      <i class="fas fa-times"></i>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onclick="document.getElementById('imageInput').click()"
+                  class="p-2 bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-200 rounded-xl hover:bg-indigo-50 hover:text-indigo-500 transition-all"
+                  title="Adjuntar imagen"
+                >
+                  <i class="fas fa-paperclip"></i>
+                </button>
+                <input
+                  type="file"
+                  id="imageInput"
+                  class="hidden"
+                  accept="image/*"
+                  onchange="handleImage(event)"
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -290,11 +350,9 @@
       ></div>
     </div>
 
-    <!-- Área de impresión separada -->
     <div id="printArea" aria-hidden="true"></div>
 
     <script>
-      // Configuración de Tailwind
       window.tailwind.config = {
         darkMode: "class",
         theme: {
@@ -309,6 +367,7 @@
       let flashcards =
         JSON.parse(localStorage.getItem("myFlashcards_v2")) || [];
       let deckName = localStorage.getItem("myFlashcardDeckName_v2") || "";
+      let currentImageData = null;
 
       function initTheme() {
         const isDark = localStorage.getItem("darkMode") === "true";
@@ -346,6 +405,26 @@
         }
       }
 
+      function handleImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentImageData = e.target.result;
+          document.getElementById("imageThumbnail").src = currentImageData;
+          document
+            .getElementById("imagePreviewArea")
+            .classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function clearImage() {
+        currentImageData = null;
+        document.getElementById("imageInput").value = "";
+        document.getElementById("imagePreviewArea").classList.add("hidden");
+      }
+
       function save() {
         localStorage.setItem("myFlashcards_v2", JSON.stringify(flashcards));
         render();
@@ -363,6 +442,7 @@
           if (index !== -1) {
             flashcards[index].question = q.value.trim();
             flashcards[index].answer = a.value.trim();
+            flashcards[index].image = currentImageData;
           }
           cancelEdit();
         } else {
@@ -370,11 +450,13 @@
             id: Date.now(),
             question: q.value.trim(),
             answer: a.value.trim(),
+            image: currentImageData,
           });
         }
 
         q.value = "";
         a.value = "";
+        clearImage();
         updateCharCount("questionInput", "qChar", 500);
         updateCharCount("answerInput", "aChar", 500);
         save();
@@ -386,6 +468,17 @@
         document.getElementById("questionInput").value = card.question;
         document.getElementById("answerInput").value = card.answer;
         document.getElementById("editId").value = card.id;
+
+        if (card.image) {
+          currentImageData = card.image;
+          document.getElementById("imageThumbnail").src = currentImageData;
+          document
+            .getElementById("imagePreviewArea")
+            .classList.remove("hidden");
+        } else {
+          clearImage();
+        }
+
         document.querySelector("#addBtn span").innerText = "Guardar";
         document
           .querySelector("#addBtn")
@@ -400,6 +493,7 @@
         document.getElementById("editId").value = "";
         document.getElementById("questionInput").value = "";
         document.getElementById("answerInput").value = "";
+        clearImage();
         document.querySelector("#addBtn span").innerText = "Añadir Tarjeta";
         const btn = document.querySelector("#addBtn");
         if (btn.classList.contains("bg-amber-500")) {
@@ -435,12 +529,14 @@
             id: 1,
             question: "¿Qué es el ATP?",
             answer:
-              "El trifosfato de adenosina es la principal molécula portadora de energía en los seres vivos.",
+              "El trifosfato de adenosina es la principal molécula portadora de energía.",
+            image: null,
           },
           {
             id: 2,
             question: "Capital de Francia",
-            answer: "París es la capital y la ciudad más poblada de Francia.",
+            answer: "París.",
+            image: null,
           },
         ];
         flashcards = [...flashcards, ...demo];
@@ -478,7 +574,6 @@
         const countLabel = document.getElementById("cardCount");
         const pageEstimate = document.getElementById("pageEstimate");
 
-        // Limpiar para renderizar
         grid.innerHTML = "";
         printArea.innerHTML = "";
         countLabel.innerText = flashcards.length;
@@ -495,7 +590,7 @@
           return;
         }
 
-        // --- RENDERIZAR EN PANTALLA ---
+        // --- PANTALLA ---
         flashcards.forEach((card, index) => {
           const div = document.createElement("div");
           div.className =
@@ -505,6 +600,7 @@
               <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase">Tarjeta ${index + 1}</span>
               <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${card.question}</p>
               <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${card.answer}</p>
+              ${card.image ? `<img src="${card.image}" class="mt-3 rounded-lg w-full h-32 object-cover border border-slate-100 dark:border-slate-700" />` : ""}
             </div>
             <div class="mt-6 flex justify-end gap-3 pt-3">
               <button onclick="editCard(${card.id})" class="text-indigo-500 hover:underline text-xs font-bold">EDITAR</button>
@@ -514,12 +610,12 @@
           grid.appendChild(div);
         });
 
-        // --- RENDERIZAR PARA IMPRESIÓN ---
+        // --- IMPRESIÓN ---
         const cardsPerPage = 8;
         for (let i = 0; i < flashcards.length; i += cardsPerPage) {
           const chunk = flashcards.slice(i, i + cardsPerPage);
 
-          // Página de Frentes
+          // Frentes
           const frontPage = document.createElement("div");
           frontPage.className = "print-page";
           chunk.forEach((card) => {
@@ -532,14 +628,17 @@
           fillEmptyCells(frontPage, chunk.length, cardsPerPage);
           printArea.appendChild(frontPage);
 
-          // Página de Dorsos
+          // Dorsos
           const backPage = document.createElement("div");
           backPage.className = "print-page back-page";
           chunk.forEach((card) => {
             const cell = document.createElement("div");
-            cell.className = "card-print";
+            cell.className = "card-print flex-col";
             const isLong = card.answer.length > 250 ? "long-text-print" : "";
-            cell.innerHTML = `<div class="${isLong}">${card.answer.replace(/\n/g, "<br>")}</div>`;
+            cell.innerHTML = `
+              <div class="${isLong}">${card.answer.replace(/\n/g, "<br>")}</div>
+              ${card.image ? `<img src="${card.image}" />` : ""}
+            `;
             backPage.appendChild(cell);
           });
           fillEmptyCells(backPage, chunk.length, cardsPerPage);
@@ -555,9 +654,7 @@
         }
       }
 
-      // Escuchar eventos de impresión para regenerar el área solo si es necesario
       window.onbeforeprint = () => {
-        // El render ya se encarga de tenerlo listo, pero forzamos sincronización
         if (
           flashcards.length > 0 &&
           !document.getElementById("printArea").innerHTML
