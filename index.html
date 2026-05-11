@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flashcards Creator :)</title>
+    <title>Flashcards :) - Optimizado para Impresión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -101,7 +101,7 @@
           max-width: 100%;
           max-height: 50mm;
           object-fit: contain;
-          margin-top: 5mm;
+          margin-top: 3mm;
           display: block;
           margin-left: auto;
           margin-right: auto;
@@ -568,6 +568,13 @@
         reader.readAsText(file);
       }
 
+      // Función auxiliar para procesar el texto y convertir \n en <br>
+      function formatText(text) {
+        if (!text) return "";
+        // Reemplaza los saltos de línea literales y los escapados
+        return text.replace(/\\n/g, "<br>").replace(/\n/g, "<br>");
+      }
+
       function render() {
         const grid = document.getElementById("cardsGrid");
         const printArea = document.getElementById("printArea");
@@ -598,8 +605,8 @@
           div.innerHTML = `
             <div>
               <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full uppercase">Tarjeta ${index + 1}</span>
-              <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${card.question}</p>
-              <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${card.answer}</p>
+              <p class="text-slate-800 dark:text-slate-100 font-bold mt-2 break-words">${formatText(card.question)}</p>
+              <p class="text-slate-500 dark:text-slate-400 text-sm mt-3 border-t pt-3 break-words whitespace-pre-wrap">${formatText(card.answer)}</p>
               ${card.image ? `<img src="${card.image}" class="mt-3 rounded-lg w-full h-32 object-cover border border-slate-100 dark:border-slate-700" />` : ""}
             </div>
             <div class="mt-6 flex justify-end gap-3 pt-3">
@@ -622,7 +629,7 @@
             const cell = document.createElement("div");
             cell.className = "card-print";
             const isLong = card.question.length > 180 ? "long-text-print" : "";
-            cell.innerHTML = `<div class="${isLong}">${card.question}</div>`;
+            cell.innerHTML = `<div class="${isLong}">${formatText(card.question)}</div>`;
             frontPage.appendChild(cell);
           });
           fillEmptyCells(frontPage, chunk.length, cardsPerPage);
@@ -636,7 +643,7 @@
             cell.className = "card-print flex-col";
             const isLong = card.answer.length > 250 ? "long-text-print" : "";
             cell.innerHTML = `
-              <div class="${isLong}">${card.answer.replace(/\n/g, "<br>")}</div>
+              <div class="${isLong}">${formatText(card.answer)}</div>
               ${card.image ? `<img src="${card.image}" />` : ""}
             `;
             backPage.appendChild(cell);
